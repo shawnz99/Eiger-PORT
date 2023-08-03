@@ -18,6 +18,7 @@
 
 package org.apache.cassandra.thrift;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -25,6 +26,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.cassandra.grpc.WorkloadServer;
 
 import org.apache.cassandra.concurrent.JMXEnabledThreadPoolExecutor;
 import org.apache.cassandra.concurrent.NamedThreadFactory;
@@ -61,33 +64,66 @@ public class CassandraDaemon extends org.apache.cassandra.service.AbstractCassan
     private final static String ASYNC = "async";
     private final static String HSHA = "hsha";
     public final static List<String> rpc_server_types = Arrays.asList(SYNC, ASYNC, HSHA);
-    private ThriftServer server;
+    private ThriftServer tserver;
+    private WorkloadServer gserver;
 
     @Override
     protected void startServer()
     {
-        if (server == null)
+        if (tserver == null)
         {
-            server = new ThriftServer(listenAddr, listenPort);
-            server.start();
+            tserver = new ThriftServer(listenAddr, listenPort);
+            tserver.start();
+
+        }
+        if (gserver == null)
+        {
+            gserver = new WorkloadServer();
+            try 
+            {
+                gserver.start();
+            } catch (IOException e)
+            {
+                logger.error("IOException thrown in GRPC Server start", e);
+            }
+
+            try
+            {
+                gserver.blockUntilShutdown();
+            } catch (InterruptedException e)
+            {
+                logger.error("Error in blocking until shutdown with GRPC server", e);
+            }
         }
     }
 
     @Override
     protected void stopServer()
     {
-        if (server != null)
+        if (tserver != null)
         {
-            server.stopServer();
+            tserver.stopServer();
             try
             {
-                server.join();
+                tserver.join();
             }
             catch (InterruptedException e)
             {
                 logger.error("Interrupted while waiting thrift server to stop", e);
             }
-            server = null;
+            tserver = null;
+        }
+        if (gserver != null)
+        {
+            try
+            {
+                gserver.stop();
+            }
+            catch (InterruptedException e)
+            {
+                logger.error("Interrupted while waiting for GRPC server to stop, e");
+            }
+            gserver = null;
         }
     }
 
@@ -102,6 +138,7 @@ public class CassandraDaemon extends org.apache.cassandra.service.AbstractCassan
         instance = new CassandraDaemon();
         instance.activate();
     }
+
 
     /**
      * Simple class to run the thrift connection accepting code in separate

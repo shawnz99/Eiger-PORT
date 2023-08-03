@@ -45,11 +45,18 @@
     <property name="build.classes" value="${build.dir}/classes"/>
     <property name="build.classes.main" value="${build.classes}/main" />
     <property name="build.classes.thrift" value="${build.classes}/thrift" />
+    <!-- GRPC -->
+    <property name="build.classes.grpc" value="${build.classes}/grpc" />
+    <!-- /GRPC -->
     <property name="javadoc.dir" value="${build.dir}/javadoc"/>
     <property name="javadoc.jars.dir" value="${build.dir}/javadocs"/>
     <property name="interface.dir" value="${basedir}/interface"/>
     <property name="interface.thrift.dir" value="${interface.dir}/thrift"/>
     <property name="interface.thrift.gen-java" value="${interface.thrift.dir}/gen-java"/>
+    <!-- GRPC -->
+    <property name="interface.grpc.dir" value="${interface.dir}/grpc"/>
+    <property name="interface.grpc.gen-java" value="${interface.grpc.dir}/gen-java"/>
+    <!-- /GRPC -->
     <property name="test.dir" value="${basedir}/test"/>
     <property name="test.resources" value="${test.dir}/resources"/>
     <property name="test.lib" value="${build.dir}/test/lib"/>
@@ -126,12 +133,39 @@
         <pathelement location="${cobertura.classes.dir}"/>
         <pathelement location="${build.classes.main}" />
         <pathelement location="${build.classes.thrift}" />
+        <!-- GRPC -->
+        <pathelement location="${basedir}/grpc-jars/protobuf-java-3.22.3.jar" />
+        <pathelement location="${build.classes.grpc}"/>
+        <pathelement location="${basedir}/grpc-jars/annotations-api-6.0.53.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-all-1.56.0.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-core-1.56.0.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-netty-shaded-1.56.0.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-protobuf-1.56.0.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-stub-1.56.0.jar"/>
+        <!-- /GRPC -->
         <fileset dir="${build.lib}">
           <include name="**/*.jar" />
         </fileset>
         <fileset dir="${build.dir.lib}">
           <include name="**/*.jar" />
         </fileset>
+    </path>
+    <path id="workload.classpath">
+        <pathelement location="${build.classes.main}" />
+        <pathelement location="${build.classes.grpc}" />
+        <pathelement location="${basedir}/grpc-jars/protobuf-java-3.22.3.jar" />
+        <pathelement location="${basedir}/grpc-jars/annotations-api-6.0.53.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-all-1.56.0.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-core-1.56.0.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-netty-shaded-1.56.0.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-protobuf-1.56.0.jar"/>
+        <pathelement location="${basedir}/grpc-jars/grpc-stub-1.56.0.jar"/>
+        <fileset dir="${build.lib}">
+          <include name="**/*.jar" />
+        </fileset>
+        <!-- <fileset dir="${build.dir.lib}">
+          <include name="**/*.jar" />
+        </fileset> -->
     </path>
 
   <macrodef name="create-javadoc">
@@ -156,6 +190,9 @@
             message="Not a source artifact, stopping here." />
         <mkdir dir="${build.classes.main}"/>
         <mkdir dir="${build.classes.thrift}"/>
+        <!-- GRPC -->
+        <mkdir dir="${build.classes.grpc}"/>
+        <!-- /GRPC -->
         <mkdir dir="${test.lib}"/>
         <mkdir dir="${test.classes}"/>
         <mkdir dir="${build.src.gen-java}"/>
@@ -325,6 +362,7 @@ url=${svn.entry.url}?pathrev=${svn.entry.commit.revision}
       <property name="maven-ant-tasks.initialized" value="true"/>
     </target>
 
+
     <!-- this task defines the dependencies that will be fetched by Maven ANT Tasks
          the dependencies are re-used for publishing artifacts to Maven Central
          in order to keep everything consistent -->
@@ -370,6 +408,23 @@ url=${svn.entry.url}?pathrev=${svn.entry.commit.revision}
           </dependency>
           
           <dependency groupId="org.apache.thrift" artifactId="libthrift" version="0.7.0"/>
+
+          <!-- Protobuf Java Runtime -->
+          <dependency groupId="com.google.protobuf" artifactId="protobuf-java" version="3.22.3" />
+          <!-- /PBJR -->
+          <!-- GRPC -->
+          <dependency groupId="com.google.guava" artifactId="guava" version="3.1.1-jre" />
+          <dependency groupId="io.grpc" artifactId="grpc-core" version="1.56.0" scope="runtime" />
+          <dependency groupId="io.grpc" artifactId="grpc-netty-shaded" version="1.56.0" scope="runtime" />
+          <dependency groupId="io.grpc" artifactId="grpc-stub" version="1.56.0" />
+          <dependency groupId="io.grpc" artifactId="grpc-protobuf" version="1.56.0" />
+          <dependency groupId="io.grpc" artifactId="grpc-api" version="1.56.0" />
+          <dependency groupId="io.grpc" artifactId="grpc-context" version="1.56.0" />
+          <dependency groupId="io.grpc" artifactId="grpc-context-lite" version="1.56.0" />
+          <dependency groupId="io.grpc" artifactId="protoc-gen-java" version="1.56.0" />
+          <!-- necessary for Java 9+ -->
+          <dependency groupId="org.apache.tomcat" artifactId="annotations-api" version="6.0.53" scope="provided" />
+          <!-- /GRPC -->
 
           <dependency groupId="com.thoughtworks.paranamer" artifactId="paranamer-ant" version="2.1"/>
           <dependency groupId="junit" artifactId="junit" version="4.6" />
@@ -641,6 +696,27 @@ url=${svn.entry.url}?pathrev=${svn.entry.commit.revision}
       </exec>
     </target>
 
+    <!-- GRPC -->
+    <target name="gRPC-build" description="Build the grpc sources">
+      <echo>Building gRPC code from ${basedir}/interface/workload.proto </echo>
+      <exec executable="protoc" dir="${basedir}/interface" failonerror="true">
+        <arg value="--plugin=protoc-gen-grpc-java=/home/shawnz99/bin/protoc-gen-grpc-java" />
+        <arg value="--java_out=${interface.grpc.gen-java}"/>
+        <arg value="--grpc-java_out=${interface.grpc.gen-java}"/> 
+        <arg value="workload.proto"/>
+      </exec>
+    </target>
+
+    <target name="run-grpc" depends="gRPC-build">
+      <java classname="org.apache.cassandra.grpc.WorkloadServer" >
+        <classpath>
+          <path refid="workload.classpath"/>
+        </classpath>
+      </java>
+      <!-- change to path refid -->
+    </target>
+    <!-- /GRPC -->
+
     <!-- create properties file with C version -->
     <target name="createVersionPropFile">
       <taskdef name="propertyfile" classname="org.apache.tools.ant.taskdefs.optional.PropertyFile"/>
@@ -674,6 +750,24 @@ url=${svn.entry.url}?pathrev=${svn.entry.commit.revision}
             name="build-project">
         <echo message="${ant.project.name}: ${ant.file}"/>
         <!-- Order matters! -->
+        <!-- GRPC -->
+        <echo message="${build.classes.grpc}"/>
+        <javac debug="true" debuglevel="${debuglevel}"
+                destdir="${build.classes.grpc}" 
+                includeantruntime="false"
+                classpathref="cassandra.classpath">
+            <src path="${interface.grpc.dir}/gen-java"/>
+            <classpath refid="cassandra.classpath"/>
+            <classpath>
+              <pathelement location="./grpc-jars/annotations-api-6.0.53.jar"/>
+              <pathelement location="./grpc-jars/grpc-all-1.56.0.jar"/>
+              <pathelement location="./grpc-jars/grpc-core-1.56.0.jar"/>
+              <pathelement location="./grpc-jars/grpc-netty-shaded-1.56.0.jar"/>
+              <pathelement location="./grpc-jars/grpc-protobuf-1.56.0.jar"/>
+              <pathelement location="./grpc-jars/grpc-stub-1.56.0.jar"/>
+            </classpath>
+        </javac>
+        <!-- /GRPC -->
         <javac debug="true" debuglevel="${debuglevel}"
                destdir="${build.classes.thrift}" includeantruntime="false">
             <src path="${interface.thrift.dir}/gen-java"/>
