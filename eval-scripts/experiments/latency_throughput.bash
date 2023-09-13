@@ -123,30 +123,30 @@ for thread in 4; do
 #for zipfian_constant in 0 0.3 0.5 0.7 0.8 0.9 0.99 1.1 1.2; do 
 #for zipfian_constant in 0; do
 variable=$thread
-	echo -e "Running $0\t$variable at $(date)" >> ${exp_dir}/progress
+#	echo -e "Running $0\t$variable at $(date)" >> ${exp_dir}/progress
 
-	sleep 20
+#	sleep 20
 	cops_cluster_start_cmd
-	cops_populate_cluster ${total_keys} ${cols_per_key_read} ${value_size} ${cols_per_key_write}
-	sleep 5
-        cops_run_experiment $total_keys $value_size $cols_per_key_read $cols_per_key_write $keys_per_read $keys_per_write $write_frac $write_trans_frac $run_time $variable $trial $use_zipfian $zipfian_constant
+#	cops_populate_cluster ${total_keys} ${cols_per_key_read} ${value_size} ${cols_per_key_write}
+#	sleep 5
+#        cops_run_experiment $total_keys $value_size $cols_per_key_read $cols_per_key_write $keys_per_read $keys_per_write $write_frac $write_trans_frac $run_time $variable $trial $use_zipfian $zipfian_constant
 
-	$kill_all_cmd
+#	$kill_all_cmd
 
-	sleep 20
+#	sleep 20
 
-	vanilla_cluster_start_cmd
-	vanilla_populate_cluster ${total_keys} ${cols_per_key_read} ${value_size} ${cols_per_key_write}
-	sleep 5
-	vanilla_run_experiment $total_keys $value_size $cols_per_key_read $cols_per_key_write $keys_per_read $keys_per_write $write_frac $write_trans_frac $run_time $variable $trial $use_zipfian $zipfian_constant
-	$kill_all_cmd
+#	vanilla_cluster_start_cmd
+#	vanilla_populate_cluster ${total_keys} ${cols_per_key_read} ${value_size} ${cols_per_key_write}
+#	sleep 5
+#	vanilla_run_experiment $total_keys $value_size $cols_per_key_read $cols_per_key_write $keys_per_read $keys_per_write $write_frac $write_trans_frac $run_time $variable $trial $use_zipfian $zipfian_constant
+#	$kill_all_cmd
 
-	sleep 5
-	gather_results
+#	sleep 5
+#	gather_results
     done
 done
 
-echo -e "FINISHED $0\tat $(date)" >> ${exp_dir}/progress
+#echo -e "FINISHED $0\tat $(date)" >> ${exp_dir}/progress
 
 #######################################
 #
@@ -163,7 +163,7 @@ set -x
 #
 #######################################
 cd $exp_dir
-./dynamic_postprocess_full.bash . ${output_dir} ${run_time} ${trim} shuffle
+#./dynamic_postprocess_full.bash . ${output_dir} ${run_time} ${trim} shuffle
 
 
 
